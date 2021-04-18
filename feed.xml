@@ -3,8 +3,8 @@
   <channel>
     <title>Ye's Scribbles</title>
     <description>Such theme, very cool.</description>
-    <link>http://scribble.muan.co</link>
-    <atom:link href="http://scribble.muan.co/feed.xml" rel="self" type="application/rss+xml" />
+    <link>https://scribble.yelinaung.xyz</link>
+    <atom:link href="https://scribble.yelinaung.xyz/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
         <title>Aung San Su Kyi ANSCII image</title>
@@ -119,8 +119,8 @@
 &lt;p&gt;You will see the current generated image are a bit slender. This is due to font spacing. You can swap better characters to represent better image.&lt;/p&gt;
 </description>
         <pubDate>Sun, 18 Apr 2021 21:34:13 +0630</pubDate>
-        <link>http://scribble.muan.co/posts/assk-anscii-image</link>
-        <guid isPermaLink="true">http://scribble.muan.co/posts/assk-anscii-image</guid>
+        <link>https://scribble.yelinaung.xyz/posts/assk-anscii-image</link>
+        <guid isPermaLink="true">https://scribble.yelinaung.xyz/posts/assk-anscii-image</guid>
       </item>
     
       <item>
@@ -354,8 +354,8 @@ end
 &lt;p&gt;Voila. we now have a working Ruby on Rails + devise SAML IDP application. We will continue to create a service provider application that will connect to the current SAML IDP.&lt;/p&gt;
 </description>
         <pubDate>Sun, 12 Jul 2020 00:00:00 +0630</pubDate>
-        <link>http://scribble.muan.co/posts/creating-saml-idp-provider-with-rails</link>
-        <guid isPermaLink="true">http://scribble.muan.co/posts/creating-saml-idp-provider-with-rails</guid>
+        <link>https://scribble.yelinaung.xyz/posts/creating-saml-idp-provider-with-rails</link>
+        <guid isPermaLink="true">https://scribble.yelinaung.xyz/posts/creating-saml-idp-provider-with-rails</guid>
       </item>
     
       <item>
@@ -406,8 +406,8 @@ tags:&lt;/p&gt;
 &lt;p&gt;ကျွန်တော် တို့ ‌‌နောက် Blog post ‌‌‌တွေမှာ Algorithm ၁ ခု ချင်းစီကို အသေးစိတ် ထပ် ရှင်းပြပါမယ်။&lt;/p&gt;
 </description>
         <pubDate>Thu, 02 Jul 2020 06:00:00 +0630</pubDate>
-        <link>http://scribble.muan.co/posts/Introduction-to-algorithms</link>
-        <guid isPermaLink="true">http://scribble.muan.co/posts/Introduction-to-algorithms</guid>
+        <link>https://scribble.yelinaung.xyz/posts/Introduction-to-algorithms</link>
+        <guid isPermaLink="true">https://scribble.yelinaung.xyz/posts/Introduction-to-algorithms</guid>
       </item>
     
   </channel>
