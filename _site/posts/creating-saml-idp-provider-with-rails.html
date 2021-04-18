@@ -1,0 +1,311 @@
+
+<!doctype>
+<html lang="en">
+  <head>
+    <meta content='Creating SAML IDP provider with Ruby on Rails - Ye's Scribbles' name='title' />
+    <meta content='Creating SAML IDP provider with Ruby on Rails - Ye's Scribbles' name='og:title' />
+    <title>Creating SAML IDP provider with Ruby on Rails - Ye's Scribbles</title>
+    <link href='http://scribble.muan.co/images/fav.png' rel='shortcut icon'>
+<link href='http://scribble.muan.co/stylesheets/style.css' rel='stylesheet' type='text/css' />
+<link href='http://scribble.muan.co/stylesheets/syntax.css' rel='stylesheet' type='text/css' />
+
+<meta content='width=device-width, initial-scale=1.0, user-scalable=no' name='viewport'>
+<meta content='text/html; charset=utf-8' http-equiv='content-type' />
+
+  <meta content='http://scribble.muan.co/posts/creating-saml-idp-provider-with-rails' property='og:url' />
+  <meta content="title: “Creating SAML IDP provider with Ruby on Rails.”date: 2020-07-02T7:48:30+06:30author: Programmer Maung Wadraft..." property='og:description' />
+  <meta content="article" property="og:type" />
+
+<!-- - -->
+
+
+
+
+
+  </head>
+  <body class="lh-copy dark-gray pa0 f6 sans-serif bg-super-white">
+    <header class="tc mt4">
+      <a href="http://scribble.muan.co">
+        <img src="http://scribble.muan.co/images/scribble.png" alt="Home" width="53" height="59">
+      </a>
+      <p>Ye's Scribbles</p>
+    </header>
+    <div class="mw7 bg-white mt4 mb3 center br2-ns bt bb ba-ns b--light-gray">
+      <nav class="bb b--light-gray pv4 tc" aria-label="Main">
+        
+          <a class="link blue hover-mid-gray mh2 pv1"
+             href="http://scribble.muan.co/">
+             Posts
+           </a>
+        
+          <a class="link blue hover-mid-gray mh2 pv1"
+             href="http://scribble.muan.co/about">
+             About me
+           </a>
+        
+      </nav>
+
+      <main class="tl f6 relative pa4 pa5-ns overflow-hidden">
+        
+          <div class="mb4">
+            <div class="fw600 light-silver mt1">12 Jul 2020</div>
+            <h1 class="ttu f3 mt0 lh-title cb mb2">
+              
+              Creating SAML IDP provider with Ruby on Rails
+            </h1>
+            
+          </div>
+        
+        <div class="markdown-body">
+          <hr />
+<p>title: “Creating SAML IDP provider with Ruby on Rails.”
+date: 2020-07-02T7:48:30+06:30
+author: Programmer Maung Wa
+draft: false
+tags:</p>
+<ul>
+  <li>Ruby on Rails</li>
+  <li>saml idp</li>
+  <li>
+    <h2 id="devise">devise</h2>
+    <p>Creating SAML IDP provider with Ruby on Rails.</p>
+  </li>
+</ul>
+
+<h1 id="rails-saml-idp-provider-with-devise">Rails SAML IDP Provider with devise</h1>
+
+<p>Recently I was working on single sign on solution for my company. After researching, we decided to use SAML for authentication. I believe everyone reading this post is already familiar with Rails and SAML. Security Assertion Markup Language, SAML is an open standard for exchanging authentication and authorization data between parties in XML format. It contains identity provider IDP which acts as a centralized authentication services and service providers SP use response XML from IDP to authenticate users. In simpler way, users logged in to IDP will automatically logged in to SP. We will have one Rails SAML identity provider with multiple SAML service providers connecting to it. In this post I will show you how to setup SAML IDP for Rails and shows how SAML SP can connect to it.</p>
+
+<p>We are going to use devise for users in both SAML IDP and SAML SP since its the most common  authentication gem for Rails applications.</p>
+
+<h1 id="saml-idp-with-devise">SAML IDP with devise</h1>
+
+<h3 id="1-installing-the-gem">1. Installing the Gem</h3>
+
+<p>To create Rails application that acts as SAML IDP. I am going to use gem called SAML IDP from <a href="https://github.com/saml-idp/saml_idp">https://github.com/saml-idp/saml_idp</a>. You need to add followings to your <code class="language-plaintext highlighter-rouge">Gemfile</code>. You  need to configure devise in your application. Make sure you have configured a working devise implementation in your Rails app.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gem</span> <span class="s1">'saml_idp'</span>
+
+<span class="c1"># Devise</span>
+<span class="n">gem</span> <span class="s1">'devise'</span>
+</code></pre></div></div>
+
+<p>You can also use saml_idp gem for non Rails projects. You can find the documentation for non Rails project <a href="https://github.com/saml-idp/saml_idp#not-using-rails">here</a>.  After modifying the Gemfile, lets proceed to install the gems.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">bundle</span> <span class="n">install</span>
+</code></pre></div></div>
+
+<h3 id="2-generating-a-certificate">2. Generating a certificate</h3>
+
+<p>To setup an IDP, we need to generate x509 certificate. If you have openssl in you machine, using this command will generate a new certificate.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>openssl req <span class="nt">-x509</span> <span class="nt">-sha256</span> <span class="nt">-nodes</span> <span class="nt">-days</span> 3650 <span class="nt">-newkey</span> rsa:2048 <span class="nt">-keyout</span> production.key <span class="nt">-out</span> production.crt
+</code></pre></div></div>
+
+<p>These keys are important, please keep them in a safe place.</p>
+
+<h3 id="3-configuration-idp-intializer">3. Configuration IDP intializer</h3>
+
+<p>Ok, we have both key and cert generated in step 2. Lets add them to the configuration</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SamlIdp.configure <span class="k">do</span> |config|
+  <span class="c"># We stored keys in environment variables.</span>
+  config.x509_certificate <span class="o">=</span> ENV[<span class="s2">"SAML_CERT"</span><span class="o">]</span>
+  config.secret_key <span class="o">=</span> ENV[<span class="s2">"SAML_SECRET_KEY"</span><span class="o">]</span>
+end
+</code></pre></div></div>
+
+<p>We still have a few configurations that we need to configure. We will come back to this later.</p>
+
+<h3 id="4-modifying-controller">4. Modifying controller.</h3>
+
+<p>Create <code class="language-plaintext highlighter-rouge">saml_idp_controller.rb</code> in controllers folder and paste this code below</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">SamlIdpController</span> <span class="o">&lt;</span> <span class="no">SamlIdp</span><span class="o">::</span><span class="no">IdpController</span>
+  <span class="c1"># Devise authenticate user</span>
+  <span class="n">before_action</span> <span class="ss">:authenticate_user!</span><span class="p">,</span> <span class="ss">except: </span><span class="p">[</span><span class="ss">:show</span><span class="p">]</span>
+
+  <span class="c1"># override create and make sure to set both "GET" and "POST" requests to /saml/auth to #create</span>
+  <span class="k">def</span> <span class="nf">create</span>
+    <span class="k">if</span> <span class="n">user_signed_in?</span>
+	<span class="c1"># renderin xml response in saml format for devise's current_user</span>
+      <span class="vi">@saml_response</span> <span class="o">=</span> <span class="n">idp_make_saml_response</span><span class="p">(</span><span class="n">current_user</span><span class="p">)</span>
+      <span class="n">render</span> <span class="ss">:template</span> <span class="o">=&gt;</span> <span class="s2">"saml_idp/idp/saml_post"</span><span class="p">,</span> <span class="ss">:layout</span> <span class="o">=&gt;</span> <span class="kp">false</span>
+      <span class="k">return</span>
+    <span class="k">else</span>
+    <span class="c1"># it shouldn't be possible to get here, but lets render 403 just in case</span>
+      <span class="n">render</span> <span class="ss">:status</span> <span class="o">=&gt;</span> <span class="ss">:forbidden</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">idp_make_saml_response</span><span class="p">(</span><span class="n">found_user</span><span class="p">)</span> <span class="c1"># not using params intentionally</span>
+    <span class="n">encode_response</span> <span class="n">found_user</span><span class="p">,{}</span>
+  <span class="k">end</span>
+
+  <span class="kp">private</span> <span class="ss">:idp_make_saml_response</span>
+
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>The code is simple, all it does it if service provider call <code class="language-plaintext highlighter-rouge">/saml/auth</code>  if user is signed in, it will response user object with SAML XML format, or else it will show devise’s login page.</p>
+
+<h3 id="4-routes">4. Routes</h3>
+
+<p>In <code class="language-plaintext highlighter-rouge">routes.rb</code></p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="n">get</span> <span class="s1">'/saml/auth'</span> <span class="o">=&gt;</span> <span class="s1">'saml_idp#create'</span>
+<span class="n">post</span> <span class="s1">'/saml/auth'</span> <span class="o">=&gt;</span> <span class="s1">'saml_idp#create'</span>
+<span class="n">get</span> <span class="s1">'/saml/metadata'</span> <span class="o">=&gt;</span> <span class="s1">'saml_idp#show'</span>
+</code></pre></div></div>
+
+<p>Make sure we are pointing the the same function in both get or post. By default get method to <code class="language-plaintext highlighter-rouge">/saml/auth</code> will go to <code class="language-plaintext highlighter-rouge">saml_idp#new</code> which will call <code class="language-plaintext highlighter-rouge">SamlIdp::IdpController</code> new method. This will render login page from the gem and it will show double login page, both devise login page and SAML login page. Pointing both get and post to <code class="language-plaintext highlighter-rouge">saml_idp#create</code> is required for devise based implementations .</p>
+
+<h3 id="5-detail-configurations">5. Detail configurations</h3>
+
+<p>Now the only thing we left is configure the user fields as we need.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SamlIdp.configure <span class="k">do</span> |config|
+	<span class="c"># Domain of your identity provider. example, https://example.com</span>
+  base <span class="o">=</span> ENV[<span class="s2">"HOST"</span><span class="o">]</span>
+
+  config.x509_certificate <span class="o">=</span> ENV[<span class="s2">"SAML_CERT"</span><span class="o">]</span>
+  config.secret_key <span class="o">=</span> ENV[<span class="s2">"SAML_SECRET_KEY"</span><span class="o">]</span>
+	<span class="c"># Name id formats</span>
+  config.name_id.formats <span class="o">=</span> <span class="o">{</span>
+      uuid: -&gt; <span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span> principal.id <span class="o">}</span>,
+      persistent: -&gt; <span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span> principal.email<span class="o">}</span>,
+      email: -&gt; <span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span> principal.email <span class="o">}</span>,
+      name: -&gt; <span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span> principal.name <span class="o">}</span>,
+      department: -&gt; <span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span> principal.department <span class="o">}</span>,
+      position: -&gt; <span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span> principal.position <span class="o">}</span>,
+      user_type: -&gt; <span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span> principal.user_type <span class="o">}</span>,
+      read_only: -&gt; <span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span> principal.read_only <span class="o">}</span>,
+      uid: -&gt; <span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span> principal.id <span class="o">}</span>
+  <span class="o">}</span>
+
+  config.organization_name <span class="o">=</span> <span class="s2">"Example"</span>
+  config.base_saml_location <span class="o">=</span> <span class="s2">"#{base}/saml"</span>
+  config.attribute_service_location <span class="o">=</span> <span class="s2">"#{base}/saml/attributes"</span>
+  config.single_service_post_location <span class="o">=</span> <span class="s2">"#{base}/saml/auth"</span>
+  config.session_expiry <span class="o">=</span> 0
+  config.algorithm <span class="o">=</span> :sha256
+
+  config.attributes <span class="o">=</span> <span class="o">{</span>
+    <span class="s2">"User id"</span> <span class="o">=&gt;</span> <span class="o">{</span>
+      <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"urn:oid:0.9.2342.19200300.100.1.1"</span>,
+      <span class="s2">"name_format"</span> <span class="o">=&gt;</span> <span class="s2">"urn:oasis:names:tc:SAML:2.0:attrname-format:basic"</span>,
+      <span class="s2">"getter"</span> <span class="o">=&gt;</span> -&gt;<span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span>
+        principal.id
+      <span class="o">}</span>,
+    <span class="o">}</span>
+    <span class="s2">"Email address"</span> <span class="o">=&gt;</span> <span class="o">{</span>
+      <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"email"</span>,
+      <span class="s2">"name_format"</span> <span class="o">=&gt;</span> <span class="s2">"urn:oasis:names:tc:SAML:2.0:attrname-format:basic"</span>,
+      <span class="s2">"getter"</span> <span class="o">=&gt;</span> -&gt;<span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span>
+        principal.email
+      <span class="o">}</span>,
+    <span class="o">}</span>,
+    <span class="s2">"Name"</span> <span class="o">=&gt;</span> <span class="o">{</span>
+      <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"name"</span>,
+      <span class="s2">"name_format"</span> <span class="o">=&gt;</span> <span class="s2">"urn:oasis:names:tc:SAML:2.0:attrname-format:basic"</span>,
+      <span class="s2">"getter"</span> <span class="o">=&gt;</span> -&gt;<span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span>
+        principal.name
+      <span class="o">}</span>
+    <span class="o">}</span>,
+    <span class="s2">"Department"</span> <span class="o">=&gt;</span> <span class="o">{</span>
+      <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"department"</span>,
+      <span class="s2">"name_format"</span> <span class="o">=&gt;</span> <span class="s2">"urn:oasis:names:tc:SAML:2.0:attrname-format:basic"</span>,
+      <span class="s2">"getter"</span> <span class="o">=&gt;</span> -&gt;<span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span>
+        principal.department
+      <span class="o">}</span>
+    <span class="o">}</span>,
+     <span class="s2">"Position"</span> <span class="o">=&gt;</span> <span class="o">{</span>
+      <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"position"</span>,
+      <span class="s2">"name_format"</span> <span class="o">=&gt;</span> <span class="s2">"urn:oasis:names:tc:SAML:2.0:attrname-format:basic"</span>,
+      <span class="s2">"getter"</span> <span class="o">=&gt;</span> -&gt;<span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span>
+        principal.position
+      <span class="o">}</span>
+    <span class="o">}</span>,
+     <span class="s2">"User Type"</span> <span class="o">=&gt;</span> <span class="o">{</span>
+       <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"user_type"</span>,
+       <span class="s2">"name_format"</span> <span class="o">=&gt;</span> <span class="s2">"urn:oasis:names:tc:SAML:2.0:attrname-format:basic"</span>,
+       <span class="s2">"getter"</span> <span class="o">=&gt;</span> -&gt;<span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span>
+         principal.user_type
+       <span class="o">}</span>
+     <span class="o">}</span>,
+     <span class="s2">"Read Only"</span> <span class="o">=&gt;</span> <span class="o">{</span>
+       <span class="s2">"name"</span> <span class="o">=&gt;</span> <span class="s2">"read_only"</span>,
+       <span class="s2">"name_format"</span> <span class="o">=&gt;</span> <span class="s2">"urn:oasis:names:tc:SAML:2.0:attrname-format:basic"</span>,
+       <span class="s2">"getter"</span> <span class="o">=&gt;</span> -&gt;<span class="o">(</span>principal<span class="o">)</span> <span class="o">{</span>
+         principal.read_only
+       <span class="o">}</span>
+     <span class="o">}</span>
+
+  <span class="o">}</span>
+
+  service_providers <span class="o">=</span> <span class="o">{</span>
+    <span class="s2">"serviceprovider.example.com"</span> <span class="o">=&gt;</span> <span class="o">{</span>
+      fingerprint: <span class="s2">"&lt;fingerprint of certificate&gt;"</span>,
+      metadata_url: <span class="s2">"https://serviceprovider.example.com/users/saml/metadata"</span>,
+      response_hosts: <span class="o">[</span><span class="s2">"serviceprovider.example.com"</span><span class="o">]</span>
+    <span class="o">}</span>,
+ <span class="o">}</span>
+
+  <span class="c"># `identifier` is the entity_id or issuer of the Service Provider,</span>
+  <span class="c"># settings is an IncomingMetadata object which has a to_h method that needs to be persisted</span>
+  config.service_provider.metadata_persister <span class="o">=</span> -&gt;<span class="o">(</span>identifier, settings<span class="o">)</span> <span class="o">{</span>
+    fname <span class="o">=</span> identifier.to_s.gsub<span class="o">(</span>/<span class="se">\/</span>|:/,<span class="s2">"_"</span><span class="o">)</span>
+    <span class="sb">`</span><span class="nb">mkdir</span> <span class="nt">-p</span> <span class="c">#{Rails.root.join("cache/saml/metadata")}`</span>
+    File.open Rails.root.join<span class="o">(</span><span class="s2">"cache/saml/metadata/#{fname}"</span><span class="o">)</span>, <span class="s2">"r+b"</span> <span class="k">do</span> |f|
+      Marshal.dump settings.to_h, f
+    end
+  <span class="o">}</span>
+
+  <span class="c"># `identifier` is the entity_id or issuer of the Service Provider,</span>
+  <span class="c"># `service_provider` is a ServiceProvider object. Based on the `identifier` or the</span>
+  <span class="c"># `service_provider` you should return the settings.to_h from above</span>
+  config.service_provider.persisted_metadata_getter <span class="o">=</span> -&gt;<span class="o">(</span>identifier, service_provider<span class="o">){</span>
+    fname <span class="o">=</span> identifier.to_s.gsub<span class="o">(</span>/<span class="se">\/</span>|:/,<span class="s2">"_"</span><span class="o">)</span>
+    <span class="sb">`</span><span class="nb">mkdir</span> <span class="nt">-p</span> <span class="c">#{Rails.root.join("cache/saml/metadata")}`</span>
+    full_filename <span class="o">=</span> Rails.root.join<span class="o">(</span><span class="s2">"cache/saml/metadata/#{fname}"</span><span class="o">)</span>
+    <span class="k">if </span>File.file?<span class="o">(</span>full_filename<span class="o">)</span>
+      File.open full_filename, <span class="s2">"rb"</span> <span class="k">do</span> |f|
+        Marshal.load f
+      end
+    end
+  <span class="o">}</span>
+
+  <span class="c"># Find ServiceProvider metadata_url and fingerprint based on our settings</span>
+  config.service_provider.finder <span class="o">=</span> -&gt;<span class="o">(</span>issuer_or_entity_id<span class="o">)</span> <span class="k">do
+   </span>service_providers[issuer_or_entity_id]
+  end
+end
+</code></pre></div></div>
+
+<p>Voila. we now have a working Ruby on Rails + devise SAML IDP application. We will continue to create a service provider application that will connect to the current SAML IDP.</p>
+
+        </div>
+        <p class="mt4">
+  Til next time,<br>
+  Ye Lin Aung
+  <span class="silver">at 00:00</span>
+</p>
+<img src="http://scribble.muan.co/images/scribble3.png" alt="scribble" />
+
+      </main>
+      <section class="fixed-l mw7 center w-100 top-50 tc pb4 nt4">
+  
+    <a href="http://scribble.muan.co/posts/Introduction-to-algorithms" class="no-underline f1 light-blue hover-silver nl5 fl-l ph3">‹</a>
+  
+  
+    <a href="http://scribble.muan.co/posts/assk-anscii-image" class="no-underline f1 light-blue hover-silver nr5 fr-l ph3">›</a>
+  
+</section>
+    </div>
+    <footer class="mw7 center tc pt3 pb4 silver">
+      Built with Jekyll using <a href="http://github.com/muan/scribble" class="link silver hover-blue pv1">Scribble</a>.
+      <img src="http://scribble.muan.co/images/scribble2.png" alt="scribble" class="mt4 db center" />
+    </footer>
+  </body>
+</html>
