@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ye's Scribbles</title>
+    <description>Such theme, very cool.</description>
+    <link>https://scribble.yelinaung.xyz</link>
+    <atom:link href="https://scribble.yelinaung.xyz/feed.xml" rel="self" type="application/rss+xml" />
+    
+      <item>
+        <title>Aung San Su Kyi ANSCII image</title>
+        <description>&lt;h2 id=&quot;rust-and-me&quot;&gt;Rust and me&lt;/h2&gt;
+&lt;p&gt;I have been learning about Rust during Thingyan Holidays to waste my time since the country is in dark times, we can’t go out. I saw someone on reddit posting about anscii stich image and I found out no body have created ANSCII image for our leader &lt;a href=&quot;https://en.wikipedia.org/wiki/Aung_San_Suu_Kyi&quot;&gt;Aung San Su Kyi&lt;/a&gt;. I found that there are already online tools to ANSCII image but most are not getting the result I wanted. So I decided to rewrite a simple ANSCII generator for ASSK image.&lt;/p&gt;
+
+&lt;h2 id=&quot;how-to&quot;&gt;How to&lt;/h2&gt;
+&lt;p&gt;Creating an ANSCII image is simple.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Get an image&lt;/li&gt;
+  &lt;li&gt;Get gray scale of the image&lt;/li&gt;
+  &lt;li&gt;Convert pixels to ANSCII characters base on character mapping.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;tldr&quot;&gt;TLDR;&lt;/h3&gt;
+&lt;p&gt;Just read the codes. Codes are simple and anyone with little knowledge with Rust will understand.  &lt;a href=&quot;https://github.com/ye-lin-aung/assk-anscii&quot;&gt;Code&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;get-an-image&quot;&gt;Get an Image&lt;/h3&gt;
+
+&lt;p&gt;Getting image is easy. We can find any image online. I am using this image.
+&lt;img src=&quot;https://raw.githubusercontent.com/ye-lin-aung/assk-anscii/master/img/original.jpg&quot; alt=&quot;Aung San Su Kyi&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Remember, we the ANSCII images are generated based on gray shades of the gray scaled image so its better to use images with black backgrounds or images with large amount of black colors are used. Too much bright colors such as bright yellow as the background on white foreground is not recommended.&lt;/p&gt;
+
+&lt;h3 id=&quot;reading-image&quot;&gt;Reading Image&lt;/h3&gt;
+
+&lt;p&gt;I am using &lt;a href=&quot;https://crates.io/crates/image&quot;&gt;image&lt;/a&gt; crate for rust to read images. The crate have good documentation and well supported APIs. Since we only need reading the file into pixels, gray scaling image and writing images are needed, the image crate is enough for us. First we add image crate in Cargo.toml.&lt;/p&gt;
+
+&lt;div class=&quot;language-toml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nn&quot;&gt;[dependencies]&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;image&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;0.23.1&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And import the external crate at the top level of declaration file. such as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;src/main.rs&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-rust highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;extern&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;crate&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;GenericImageView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;//Rest goes down here&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;fn&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now we can start reading the file. We  will open the file with image::open and exit the program if there is any problem with reading the file.&lt;/p&gt;
+
+&lt;div class=&quot;language-rust highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;match&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;assk.jpg&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+
+        &lt;span class=&quot;nf&quot;&gt;Ok&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;Err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;nd&quot;&gt;panic!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Problem reading image: {:?}&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+  &lt;span class=&quot;nd&quot;&gt;println!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;dimensions {:?}&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.dimensions&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;());&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;gray-scalaing&quot;&gt;Gray Scalaing&lt;/h3&gt;
+
+&lt;p&gt;We need to map each color pixel with a letter. Since images are with colors, we have RGBA profiles. Meaning you have (0,0,0,0) - (255,255,255,255) color variants. We don’t want to map all these colors to letters, we don’t have enough characters to represent all these different color pixels. So we need to gray scale the image. Gray scaling means turning each color pixel to a shade of gray. All the color variants will turned into different shades of gray. This will reduce from our 255^4  color variants to 255 shades of gray only. Its more easier to map them into characters now right?. We will now resize the image a bit so that image won’t be so large viewing at terminal. Very large images will break the lines in terminal automatically and the result will be disoriented.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Black and white won’t work since changing the image to black and white will turn all bright pixels to white and dark pixels to black and areas of bright colors will just become a single white area which is not what we wanted&lt;/em&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;gray-scale-vs-black-and-white&quot;&gt;Gray scale vs Black and white&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/gs_vs_bl.jpg&quot; alt=&quot;Gray Scale vs Black and White&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;getting-grayscale-of-image-and-resizing-by-5&quot;&gt;Getting grayscale of image and resizing by 5&lt;/h4&gt;
+&lt;div class=&quot;language-rust highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gray_image&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.grayscale&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gray_image&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gray_image&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.resize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gray_image&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gray_image&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;FilterType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Nearest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;mapping-shades&quot;&gt;Mapping shades&lt;/h3&gt;
+
+&lt;div class=&quot;language-rust highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;character_set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;12&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot; &quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;'&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;,&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;.&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;:&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;.&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;L&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;O&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;#&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;@&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now we only need to map the shades to characters. Mapping all 255 characters will give very detailed image. For us, we don’t need a detail image. So we are going to use less character mapping. We will use 12 characters all 255 shades.  every 21 shades will be assigned with a letter. For example 0 - 21 is going to display as letter A, 21 - 42 as letter  B and goes on. We are going to use “ “ for lightest shade and “@” for darkest shade. Calculating the index of character for each shade is easy. We just need to divide the shade with 255 and multiple with the character map length - 1. So if we are given 255 (maximum shade), 255 / 255 * ( 12  - 1 )  = 11 meaning we are going to use the character from index 11 from character map. Since the number are between 0 - 255, it will only use range from 0 - 11 if we rounded the index so we don’t need to worry about index out of bound issues.&lt;/p&gt;
+
+&lt;div class=&quot;language-rust highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;mut&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;art&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;mut&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;last_y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+ 
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pixel&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gray_image&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.pixels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+       &lt;span class=&quot;c&quot;&gt;// Read the images and write new line if the last read y position is not same as new read y position &lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;last_y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pixel&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;.1&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;art&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.push_str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;last_y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pixel&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;.1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pixel_data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pixel&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;.2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+	     &lt;span class=&quot;c&quot;&gt;// We are going to convert RGB to single value shade.  &lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;brightness&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;f64&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pixel_data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;u64&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pixel_data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;u64&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pixel_data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;u64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;f64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;c&quot;&gt;// Getting character position for shades, since we are using 12 characters, we will have a character for every 21 shades. &lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;character_position&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;brightness&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;255.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;character_set&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;f64&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.round&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;usize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+         
+         &lt;span class=&quot;c&quot;&gt;// Write the character to position&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;art&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.push_str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;character_set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;character_position&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;nn&quot;&gt;fs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;assk-black.txt&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;art&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.as_bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.unwrap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Voila, this is how we get an ANSCII image generator written in Rust. &lt;a href=&quot;https://github.com/ye-lin-aung/assk-anscii&quot;&gt;Code&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;You can play around the character map to get better results. Example some characters are more visible in dark backgrounds than some are in white. Using white spaces for darkest shades are good for dark backgrounds but not god for light backgrounds. The character map can be added new characters to get more detailed images and swap characters to get better image clarity based on your terminal background. You can see I use different character sets for different background images.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;original&quot;&gt;Original&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/ye-lin-aung/assk-anscii/master/img/original.jpg&quot; alt=&quot;Original&quot; title=&quot;Original&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;white-background&quot;&gt;White Background&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/ye-lin-aung/assk-anscii/master/img/white.jpg&quot; alt=&quot;White&quot; title=&quot;White&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;black-background&quot;&gt;Black Background&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/ye-lin-aung/assk-anscii/master/img/black.png&quot; alt=&quot;Black&quot; title=&quot;Black&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;You will see the current generated image are a bit slender. This is due to font spacing. You can swap better characters to represent better image.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 18 Apr 2021 21:34:13 +0630</pubDate>
+        <link>https://scribble.yelinaung.xyz/posts/assk-anscii-image</link>
+        <guid isPermaLink="true">https://scribble.yelinaung.xyz/posts/assk-anscii-image</guid>
+      </item>
+    
+      <item>
+        <title>Creating SAML IDP provider with Ruby on Rails</title>
+        <description>&lt;hr /&gt;
+&lt;p&gt;title: “Creating SAML IDP provider with Ruby on Rails.”
+date: 2020-07-02T7:48:30+06:30
+author: Programmer Maung Wa
+draft: false
+tags:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Ruby on Rails&lt;/li&gt;
+  &lt;li&gt;saml idp&lt;/li&gt;
+  &lt;li&gt;
+    &lt;h2 id=&quot;devise&quot;&gt;devise&lt;/h2&gt;
+    &lt;p&gt;Creating SAML IDP provider with Ruby on Rails.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;rails-saml-idp-provider-with-devise&quot;&gt;Rails SAML IDP Provider with devise&lt;/h1&gt;
+
+&lt;p&gt;Recently I was working on single sign on solution for my company. After researching, we decided to use SAML for authentication. I believe everyone reading this post is already familiar with Rails and SAML. Security Assertion Markup Language, SAML is an open standard for exchanging authentication and authorization data between parties in XML format. It contains identity provider IDP which acts as a centralized authentication services and service providers SP use response XML from IDP to authenticate users. In simpler way, users logged in to IDP will automatically logged in to SP. We will have one Rails SAML identity provider with multiple SAML service providers connecting to it. In this post I will show you how to setup SAML IDP for Rails and shows how SAML SP can connect to it.&lt;/p&gt;
+
+&lt;p&gt;We are going to use devise for users in both SAML IDP and SAML SP since its the most common  authentication gem for Rails applications.&lt;/p&gt;
+
+&lt;h1 id=&quot;saml-idp-with-devise&quot;&gt;SAML IDP with devise&lt;/h1&gt;
+
+&lt;h3 id=&quot;1-installing-the-gem&quot;&gt;1. Installing the Gem&lt;/h3&gt;
+
+&lt;p&gt;To create Rails application that acts as SAML IDP. I am going to use gem called SAML IDP from &lt;a href=&quot;https://github.com/saml-idp/saml_idp&quot;&gt;https://github.com/saml-idp/saml_idp&lt;/a&gt;. You need to add followings to your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Gemfile&lt;/code&gt;. You  need to configure devise in your application. Make sure you have configured a working devise implementation in your Rails app.&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;gem&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'saml_idp'&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Devise&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;gem&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'devise'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;You can also use saml_idp gem for non Rails projects. You can find the documentation for non Rails project &lt;a href=&quot;https://github.com/saml-idp/saml_idp#not-using-rails&quot;&gt;here&lt;/a&gt;.  After modifying the Gemfile, lets proceed to install the gems.&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;bundle&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;install&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;2-generating-a-certificate&quot;&gt;2. Generating a certificate&lt;/h3&gt;
+
+&lt;p&gt;To setup an IDP, we need to generate x509 certificate. If you have openssl in you machine, using this command will generate a new certificate.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;openssl req &lt;span class=&quot;nt&quot;&gt;-x509&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-sha256&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-nodes&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-days&lt;/span&gt; 3650 &lt;span class=&quot;nt&quot;&gt;-newkey&lt;/span&gt; rsa:2048 &lt;span class=&quot;nt&quot;&gt;-keyout&lt;/span&gt; production.key &lt;span class=&quot;nt&quot;&gt;-out&lt;/span&gt; production.crt
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;These keys are important, please keep them in a safe place.&lt;/p&gt;
+
+&lt;h3 id=&quot;3-configuration-idp-intializer&quot;&gt;3. Configuration IDP intializer&lt;/h3&gt;
+
+&lt;p&gt;Ok, we have both key and cert generated in step 2. Lets add them to the configuration&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;SamlIdp.configure &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; |config|
+  &lt;span class=&quot;c&quot;&gt;# We stored keys in environment variables.&lt;/span&gt;
+  config.x509_certificate &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; ENV[&lt;span class=&quot;s2&quot;&gt;&quot;SAML_CERT&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+  config.secret_key &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; ENV[&lt;span class=&quot;s2&quot;&gt;&quot;SAML_SECRET_KEY&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+end
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We still have a few configurations that we need to configure. We will come back to this later.&lt;/p&gt;
+
+&lt;h3 id=&quot;4-modifying-controller&quot;&gt;4. Modifying controller.&lt;/h3&gt;
+
+&lt;p&gt;Create &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;saml_idp_controller.rb&lt;/code&gt; in controllers folder and paste this code below&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;SamlIdpController&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;SamlIdp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;IdpController&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# Devise authenticate user&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;before_action&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:authenticate_user!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;except: &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:show&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+  &lt;span class=&quot;c1&quot;&gt;# override create and make sure to set both &quot;GET&quot; and &quot;POST&quot; requests to /saml/auth to #create&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;create&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;user_signed_in?&lt;/span&gt;
+	&lt;span class=&quot;c1&quot;&gt;# renderin xml response in saml format for devise's current_user&lt;/span&gt;
+      &lt;span class=&quot;vi&quot;&gt;@saml_response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;idp_make_saml_response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;current_user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;render&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:template&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;saml_idp/idp/saml_post&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:layout&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;false&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;# it shouldn't be possible to get here, but lets render 403 just in case&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;render&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:status&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:forbidden&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+  &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;idp_make_saml_response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;found_user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# not using params intentionally&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;encode_response&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;found_user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,{}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+  &lt;span class=&quot;kp&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:idp_make_saml_response&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The code is simple, all it does it if service provider call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/saml/auth&lt;/code&gt;  if user is signed in, it will response user object with SAML XML format, or else it will show devise’s login page.&lt;/p&gt;
+
+&lt;h3 id=&quot;4-routes&quot;&gt;4. Routes&lt;/h3&gt;
+
+&lt;p&gt;In &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;routes.rb&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/saml/auth'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'saml_idp#create'&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;post&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/saml/auth'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'saml_idp#create'&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/saml/metadata'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'saml_idp#show'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Make sure we are pointing the the same function in both get or post. By default get method to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/saml/auth&lt;/code&gt; will go to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;saml_idp#new&lt;/code&gt; which will call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SamlIdp::IdpController&lt;/code&gt; new method. This will render login page from the gem and it will show double login page, both devise login page and SAML login page. Pointing both get and post to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;saml_idp#create&lt;/code&gt; is required for devise based implementations .&lt;/p&gt;
+
+&lt;h3 id=&quot;5-detail-configurations&quot;&gt;5. Detail configurations&lt;/h3&gt;
+
+&lt;p&gt;Now the only thing we left is configure the user fields as we need.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;SamlIdp.configure &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; |config|
+	&lt;span class=&quot;c&quot;&gt;# Domain of your identity provider. example, https://example.com&lt;/span&gt;
+  base &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; ENV[&lt;span class=&quot;s2&quot;&gt;&quot;HOST&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+
+  config.x509_certificate &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; ENV[&lt;span class=&quot;s2&quot;&gt;&quot;SAML_CERT&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+  config.secret_key &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; ENV[&lt;span class=&quot;s2&quot;&gt;&quot;SAML_SECRET_KEY&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+	&lt;span class=&quot;c&quot;&gt;# Name id formats&lt;/span&gt;
+  config.name_id.formats &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      uuid: -&amp;gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; principal.id &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+      persistent: -&amp;gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; principal.email&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+      email: -&amp;gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; principal.email &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+      name: -&amp;gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; principal.name &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+      department: -&amp;gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; principal.department &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+      position: -&amp;gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; principal.position &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+      user_type: -&amp;gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; principal.user_type &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+      read_only: -&amp;gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; principal.read_only &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+      uid: -&amp;gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; principal.id &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+  config.organization_name &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Example&quot;&lt;/span&gt;
+  config.base_saml_location &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;#{base}/saml&quot;&lt;/span&gt;
+  config.attribute_service_location &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;#{base}/saml/attributes&quot;&lt;/span&gt;
+  config.single_service_post_location &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;#{base}/saml/auth&quot;&lt;/span&gt;
+  config.session_expiry &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+  config.algorithm &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; :sha256
+
+  config.attributes &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;User id&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;urn:oid:0.9.2342.19200300.100.1.1&quot;&lt;/span&gt;,
+      &lt;span class=&quot;s2&quot;&gt;&quot;name_format&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;urn:oasis:names:tc:SAML:2.0:attrname-format:basic&quot;&lt;/span&gt;,
+      &lt;span class=&quot;s2&quot;&gt;&quot;getter&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; -&amp;gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        principal.id
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;Email address&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;email&quot;&lt;/span&gt;,
+      &lt;span class=&quot;s2&quot;&gt;&quot;name_format&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;urn:oasis:names:tc:SAML:2.0:attrname-format:basic&quot;&lt;/span&gt;,
+      &lt;span class=&quot;s2&quot;&gt;&quot;getter&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; -&amp;gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        principal.email
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+    &lt;span class=&quot;s2&quot;&gt;&quot;Name&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt;,
+      &lt;span class=&quot;s2&quot;&gt;&quot;name_format&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;urn:oasis:names:tc:SAML:2.0:attrname-format:basic&quot;&lt;/span&gt;,
+      &lt;span class=&quot;s2&quot;&gt;&quot;getter&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; -&amp;gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        principal.name
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+    &lt;span class=&quot;s2&quot;&gt;&quot;Department&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;department&quot;&lt;/span&gt;,
+      &lt;span class=&quot;s2&quot;&gt;&quot;name_format&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;urn:oasis:names:tc:SAML:2.0:attrname-format:basic&quot;&lt;/span&gt;,
+      &lt;span class=&quot;s2&quot;&gt;&quot;getter&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; -&amp;gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        principal.department
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+     &lt;span class=&quot;s2&quot;&gt;&quot;Position&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;position&quot;&lt;/span&gt;,
+      &lt;span class=&quot;s2&quot;&gt;&quot;name_format&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;urn:oasis:names:tc:SAML:2.0:attrname-format:basic&quot;&lt;/span&gt;,
+      &lt;span class=&quot;s2&quot;&gt;&quot;getter&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; -&amp;gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        principal.position
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+     &lt;span class=&quot;s2&quot;&gt;&quot;User Type&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+       &lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;user_type&quot;&lt;/span&gt;,
+       &lt;span class=&quot;s2&quot;&gt;&quot;name_format&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;urn:oasis:names:tc:SAML:2.0:attrname-format:basic&quot;&lt;/span&gt;,
+       &lt;span class=&quot;s2&quot;&gt;&quot;getter&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; -&amp;gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+         principal.user_type
+       &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+     &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+     &lt;span class=&quot;s2&quot;&gt;&quot;Read Only&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+       &lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;read_only&quot;&lt;/span&gt;,
+       &lt;span class=&quot;s2&quot;&gt;&quot;name_format&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;urn:oasis:names:tc:SAML:2.0:attrname-format:basic&quot;&lt;/span&gt;,
+       &lt;span class=&quot;s2&quot;&gt;&quot;getter&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; -&amp;gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;principal&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+         principal.read_only
+       &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+     &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+  service_providers &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;serviceprovider.example.com&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      fingerprint: &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;fingerprint of certificate&amp;gt;&quot;&lt;/span&gt;,
+      metadata_url: &lt;span class=&quot;s2&quot;&gt;&quot;https://serviceprovider.example.com/users/saml/metadata&quot;&lt;/span&gt;,
+      response_hosts: &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;serviceprovider.example.com&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;,
+ &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;c&quot;&gt;# `identifier` is the entity_id or issuer of the Service Provider,&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;# settings is an IncomingMetadata object which has a to_h method that needs to be persisted&lt;/span&gt;
+  config.service_provider.metadata_persister &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; -&amp;gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;identifier, settings&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    fname &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; identifier.to_s.gsub&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;/&lt;span class=&quot;se&quot;&gt;\/&lt;/span&gt;|:/,&lt;span class=&quot;s2&quot;&gt;&quot;_&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;mkdir&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;#{Rails.root.join(&quot;cache/saml/metadata&quot;)}`&lt;/span&gt;
+    File.open Rails.root.join&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;cache/saml/metadata/#{fname}&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;, &lt;span class=&quot;s2&quot;&gt;&quot;r+b&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; |f|
+      Marshal.dump settings.to_h, f
+    end
+  &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;c&quot;&gt;# `identifier` is the entity_id or issuer of the Service Provider,&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;# `service_provider` is a ServiceProvider object. Based on the `identifier` or the&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;# `service_provider` you should return the settings.to_h from above&lt;/span&gt;
+  config.service_provider.persisted_metadata_getter &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; -&amp;gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;identifier, service_provider&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+    fname &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; identifier.to_s.gsub&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;/&lt;span class=&quot;se&quot;&gt;\/&lt;/span&gt;|:/,&lt;span class=&quot;s2&quot;&gt;&quot;_&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;mkdir&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;#{Rails.root.join(&quot;cache/saml/metadata&quot;)}`&lt;/span&gt;
+    full_filename &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Rails.root.join&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;cache/saml/metadata/#{fname}&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if &lt;/span&gt;File.file?&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;full_filename&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+      File.open full_filename, &lt;span class=&quot;s2&quot;&gt;&quot;rb&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; |f|
+        Marshal.load f
+      end
+    end
+  &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;c&quot;&gt;# Find ServiceProvider metadata_url and fingerprint based on our settings&lt;/span&gt;
+  config.service_provider.finder &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; -&amp;gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;issuer_or_entity_id&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do
+   &lt;/span&gt;service_providers[issuer_or_entity_id]
+  end
+end
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Voila. we now have a working Ruby on Rails + devise SAML IDP application. We will continue to create a service provider application that will connect to the current SAML IDP.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 12 Jul 2020 00:00:00 +0630</pubDate>
+        <link>https://scribble.yelinaung.xyz/posts/creating-saml-idp-provider-with-rails</link>
+        <guid isPermaLink="true">https://scribble.yelinaung.xyz/posts/creating-saml-idp-provider-with-rails</guid>
+      </item>
+    
+      <item>
+        <title>Introduction to algorithms - MM</title>
+        <description>&lt;hr /&gt;
+&lt;p&gt;title: “Introduction to algorithms”
+date: 2020-06-04T20:57:47+06:30
+author: Programmer Maung Wa
+draft: false
+tags:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;algorithms&lt;/li&gt;
+  &lt;li&gt;introduction&lt;/li&gt;
+  &lt;li&gt;
+    &lt;h2 id=&quot;myanmar&quot;&gt;myanmar&lt;/h2&gt;
+    &lt;p&gt;Algorithms ဆိုတာ problem တစ်ခုကို ဖြေရှင်းဖို့ သက်မှတ်နည်းလမ်း တစ်ခု့ဖြစ်တယ်။ Algorithms တွေကို project အသေးလေးတွေက အစ အကြီးတွေမှာပါ တွေ့ရလိမ့်မယ်။ Sorting, Searching, Routing တွေမှာ algorithms တွေအများဆုံးသုံးကြတယ်။ အလုပ် interview တွေ မှာလဲ algorithm နဲ့ပတ်သက်တဲ့ problems တွေ မေးလေ့မေးထရှိတဲ့ အတွက် career အတွက်အလွန်အရေးပါတဲ့အရာဖြစ်တယ်။&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;what-is-algorithms&quot;&gt;&lt;strong&gt;What is algorithms&lt;/strong&gt;&lt;/h1&gt;
+
+&lt;h2 id=&quot;algorithm-တွေကဘယ်လောက်အရေးပါလဲ&quot;&gt;Algorithm တွေကဘယ်လောက်အရေးပါလဲ။&lt;/h2&gt;
+
+&lt;p&gt;Algorithm ကောင်းတွေက ဘယ်လောက်အရေးပါလဲဆို algorithm ဘယ်လောက်ကောင်းလဲပေါ်မူတည်ပြီး algorithm တွေရဲ့ running time အရမ်းကွာသွားနိုင်တယ်။ ကိုယ်က ဘယ်လောက် performance မြင့်တဲ့ language ကြီးနဲ့ပဲ ရေးရေး algorithm မကောင်းရင် ကြာမှာပဲ။&lt;/p&gt;
+
+&lt;h2 id=&quot;algorithms-တွေကိုဘယ်လိုတိုင်းတာမလဲ&quot;&gt;Algorithms တွေကိုဘယ်လိုတိုင်းတာမလဲ&lt;/h2&gt;
+
+&lt;p&gt;ကျွန်တော်တို့ algorithm တွေကိုတိုင်းတာရာမှာ algorithm ရဲ့ time complexity and space complexity ဆိုပြီး တိုင်းတာလို့ရတယ်။&lt;/p&gt;
+
+&lt;p&gt;Time complexity ဆိုတာ algorithm ရဲ့ running time ကို တိုင်းတာတာဖြစ်ပီး Space complexity ဆိုတာ algorithm ရဲ့ run နေတဲ့အချိန် memory ပေါ်မှာ data ဘယ် လောက် နေရာယူနေလဲ + Lines of code (LOC) ကိုတိုင်းတာတာဖြစ်တယ်။ များသောအားဖြင့်တော့ algorithms တွေကို time complexity တိုင်းကြတယ်။ ဘာလို့လဲဆိုတော့ space complexity က resource က limit ရှိတဲ့အခြေအနေမျိုးတွေမှာ ဥပမာ small IOT တွေတို့ မော်ဒယ်နိမ့်တဲ့ mobile device တွေတို့လို device တွေရဲ့ resource ကို တိုးလို့မလွယ်တဲ့အချိန်မှာ ပိုအရေးပါတယ်။&lt;/p&gt;
+
+&lt;h2 id=&quot;time-complexity-ကိုဘယ်လိုတိုင်းတာမလဲ&quot;&gt;Time complexity ကိုဘယ်လိုတိုင်းတာမလဲ&lt;/h2&gt;
+
+&lt;p&gt;Algorithms တွေက data ပေါ်မူတည်ပီးတော့လဲ time complexity နဲ့ space complexity ကွာခြားနိုင်တယ်&lt;/p&gt;
+
+&lt;p&gt;ဥပမာ - စီပြီးသားဖြစ်နေတဲ့ ဖြစ်နေတဲ့ dataset တခုမှာ အမျိုးတူတာကို စုတဲ့ (sorting) algorithm X ကို run တာနဲ့ လုံးဝပြောင်းပြန်ဖြစ်နေတဲ့ dataset မှာ run တာနဲ့ running time ကော space ကောကွာနိုင်တယ်။&lt;/p&gt;
+
+&lt;p&gt;ဒီတော့ ကျွန်တော်တို algorithm ကိုတိုင်းတာတဲ့အချိန်မှာ ၃ ခုတိုင်းတာ လိုရတယ်။&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Worst case scenario  ( Big O ) O(n)&lt;/li&gt;
+  &lt;li&gt;Average case scenario ( Big Theta ) Θ(n)&lt;/li&gt;
+  &lt;li&gt;Best case scenario ဆိုပီး အဆိုးဆုံးဆိုဘယ်လောက် ကြာမလဲ အကောင်းဆုံးဆိုဘယ်လောက် ကြာမလဲတိုင်းတာကြတယ် ( Big Omega ) Ω(n)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://www.bigocheatsheet.com/img/big-o-cheat-sheet-poster.png&quot; alt=&quot;bigo&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;ကျွန်တော် တို့ ‌‌နောက် Blog post ‌‌‌တွေမှာ Algorithm ၁ ခု ချင်းစီကို အသေးစိတ် ထပ် ရှင်းပြပါမယ်။&lt;/p&gt;
+</description>
+        <pubDate>Thu, 02 Jul 2020 06:00:00 +0630</pubDate>
+        <link>https://scribble.yelinaung.xyz/posts/Introduction-to-algorithms</link>
+        <guid isPermaLink="true">https://scribble.yelinaung.xyz/posts/Introduction-to-algorithms</guid>
+      </item>
+    
+  </channel>
+</rss>

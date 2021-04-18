@@ -1,0 +1,191 @@
+
+<!doctype>
+<html lang="en">
+  <head>
+    <meta content='Aung San Su Kyi ANSCII image - Ye's Scribbles' name='title' />
+    <meta content='Aung San Su Kyi ANSCII image - Ye's Scribbles' name='og:title' />
+    <title>Aung San Su Kyi ANSCII image - Ye's Scribbles</title>
+    <link href='https://scribble.yelinaung.xyz/images/fav.png' rel='shortcut icon'>
+<link href='https://scribble.yelinaung.xyz/stylesheets/style.css' rel='stylesheet' type='text/css' />
+<link href='https://scribble.yelinaung.xyz/stylesheets/syntax.css' rel='stylesheet' type='text/css' />
+
+<meta content='width=device-width, initial-scale=1.0, user-scalable=no' name='viewport'>
+<meta content='text/html; charset=utf-8' http-equiv='content-type' />
+
+  <meta content='https://scribble.yelinaung.xyz/posts/assk-anscii-image' property='og:url' />
+  <meta content="Rust and meI have been learning about Rust during Thingyan Holidays to waste my time since the country is in dark tim..." property='og:description' />
+  <meta content="article" property="og:type" />
+
+<!-- - -->
+
+
+
+
+
+  </head>
+  <body class="lh-copy dark-gray pa0 f6 sans-serif bg-super-white">
+    <header class="tc mt4">
+      <a href="https://scribble.yelinaung.xyz">
+        <img src="https://scribble.yelinaung.xyz/images/scribble.png" alt="Home" width="53" height="59">
+      </a>
+      <p>Ye's Scribbles</p>
+    </header>
+    <div class="mw7 bg-white mt4 mb3 center br2-ns bt bb ba-ns b--light-gray">
+      <nav class="bb b--light-gray pv4 tc" aria-label="Main">
+        
+          <a class="link blue hover-mid-gray mh2 pv1"
+             href="https://scribble.yelinaung.xyz/">
+             Posts
+           </a>
+        
+          <a class="link blue hover-mid-gray mh2 pv1"
+             href="https://scribble.yelinaung.xyz/about">
+             About me
+           </a>
+        
+      </nav>
+
+      <main class="tl f6 relative pa4 pa5-ns overflow-hidden">
+        
+          <div class="mb4">
+            <div class="fw600 light-silver mt1">18 Apr 2021</div>
+            <h1 class="ttu f3 mt0 lh-title cb mb2">
+              
+              Aung San Su Kyi ANSCII image
+            </h1>
+            
+          </div>
+        
+        <div class="markdown-body">
+          <h2 id="rust-and-me">Rust and me</h2>
+<p>I have been learning about Rust during Thingyan Holidays to waste my time since the country is in dark times, we can’t go out. I saw someone on reddit posting about anscii stich image and I found out no body have created ANSCII image for our leader <a href="https://en.wikipedia.org/wiki/Aung_San_Suu_Kyi">Aung San Su Kyi</a>. I found that there are already online tools to ANSCII image but most are not getting the result I wanted. So I decided to rewrite a simple ANSCII generator for ASSK image.</p>
+
+<h2 id="how-to">How to</h2>
+<p>Creating an ANSCII image is simple.</p>
+
+<ol>
+  <li>Get an image</li>
+  <li>Get gray scale of the image</li>
+  <li>Convert pixels to ANSCII characters base on character mapping.</li>
+</ol>
+
+<h3 id="tldr">TLDR;</h3>
+<p>Just read the codes. Codes are simple and anyone with little knowledge with Rust will understand.  <a href="https://github.com/ye-lin-aung/assk-anscii">Code</a></p>
+
+<h3 id="get-an-image">Get an Image</h3>
+
+<p>Getting image is easy. We can find any image online. I am using this image.
+<img src="https://raw.githubusercontent.com/ye-lin-aung/assk-anscii/master/img/original.jpg" alt="Aung San Su Kyi" /></p>
+
+<p>Remember, we the ANSCII images are generated based on gray shades of the gray scaled image so its better to use images with black backgrounds or images with large amount of black colors are used. Too much bright colors such as bright yellow as the background on white foreground is not recommended.</p>
+
+<h3 id="reading-image">Reading Image</h3>
+
+<p>I am using <a href="https://crates.io/crates/image">image</a> crate for rust to read images. The crate have good documentation and well supported APIs. Since we only need reading the file into pixels, gray scaling image and writing images are needed, the image crate is enough for us. First we add image crate in Cargo.toml.</p>
+
+<div class="language-toml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nn">[dependencies]</span>
+<span class="py">image</span> <span class="p">=</span> <span class="s">"0.23.1"</span>
+</code></pre></div></div>
+
+<p>And import the external crate at the top level of declaration file. such as <code class="language-plaintext highlighter-rouge">src/main.rs</code></p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">extern</span> <span class="n">crate</span> <span class="n">image</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">image</span><span class="p">::</span><span class="n">GenericImageView</span><span class="p">;</span>
+
+<span class="c">//Rest goes down here</span>
+<span class="k">fn</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{}</span> 
+</code></pre></div></div>
+
+<p>Now we can start reading the file. We  will open the file with image::open and exit the program if there is any problem with reading the file.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">let</span> <span class="n">image</span> <span class="o">=</span> <span class="k">match</span> <span class="nn">image</span><span class="p">::</span><span class="nf">open</span><span class="p">(</span><span class="s">"assk.jpg"</span><span class="p">){</span>
+
+        <span class="nf">Ok</span><span class="p">(</span><span class="n">image</span><span class="p">)</span> <span class="k">=&gt;</span> <span class="n">image</span><span class="p">,</span>
+        <span class="nf">Err</span><span class="p">(</span><span class="n">error</span><span class="p">)</span> <span class="k">=&gt;</span> <span class="nd">panic!</span><span class="p">(</span><span class="s">"Problem reading image: {:?}"</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+    <span class="p">};</span>
+  <span class="nd">println!</span><span class="p">(</span><span class="s">"dimensions {:?}"</span><span class="p">,</span> <span class="n">image</span><span class="nf">.dimensions</span><span class="p">());</span>
+</code></pre></div></div>
+
+<h3 id="gray-scalaing">Gray Scalaing</h3>
+
+<p>We need to map each color pixel with a letter. Since images are with colors, we have RGBA profiles. Meaning you have (0,0,0,0) - (255,255,255,255) color variants. We don’t want to map all these colors to letters, we don’t have enough characters to represent all these different color pixels. So we need to gray scale the image. Gray scaling means turning each color pixel to a shade of gray. All the color variants will turned into different shades of gray. This will reduce from our 255^4  color variants to 255 shades of gray only. Its more easier to map them into characters now right?. We will now resize the image a bit so that image won’t be so large viewing at terminal. Very large images will break the lines in terminal automatically and the result will be disoriented.</p>
+
+<p><em>Black and white won’t work since changing the image to black and white will turn all bright pixels to white and dark pixels to black and areas of bright colors will just become a single white area which is not what we wanted</em></p>
+
+<h4 id="gray-scale-vs-black-and-white">Gray scale vs Black and white</h4>
+<p><img src="/images/gs_vs_bl.jpg" alt="Gray Scale vs Black and White" /></p>
+
+<h4 id="getting-grayscale-of-image-and-resizing-by-5">Getting grayscale of image and resizing by 5</h4>
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">let</span> <span class="n">gray_image</span> <span class="o">=</span> <span class="n">image</span><span class="nf">.grayscale</span><span class="p">();</span>
+
+    <span class="k">let</span> <span class="n">gray_image</span> <span class="o">=</span> <span class="n">gray_image</span><span class="nf">.resize</span><span class="p">(</span><span class="n">gray_image</span><span class="nf">.width</span><span class="p">()</span> <span class="o">/</span> <span class="mi">5</span> <span class="p">,</span> <span class="n">gray_image</span><span class="nf">.height</span><span class="p">()</span> <span class="o">/</span> <span class="mi">5</span><span class="p">,</span> <span class="nn">FilterType</span><span class="p">::</span><span class="n">Nearest</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h3 id="mapping-shades">Mapping shades</h3>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">let</span> <span class="n">character_set</span><span class="p">:</span> <span class="p">[</span><span class="o">&amp;</span><span class="nb">str</span><span class="p">;</span> <span class="mi">12</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s">" "</span><span class="p">,</span> <span class="s">"'"</span><span class="p">,</span> <span class="s">","</span><span class="p">,</span> <span class="s">"."</span><span class="p">,</span> <span class="s">":"</span><span class="p">,</span> <span class="s">";"</span><span class="p">,</span> <span class="s">"."</span><span class="p">,</span> <span class="s">"L"</span><span class="p">,</span> <span class="s">"O"</span><span class="p">,</span> <span class="s">"0"</span><span class="p">,</span> <span class="s">"#"</span><span class="p">,</span> <span class="s">"@"</span><span class="p">];</span>
+</code></pre></div></div>
+
+<p>Now we only need to map the shades to characters. Mapping all 255 characters will give very detailed image. For us, we don’t need a detail image. So we are going to use less character mapping. We will use 12 characters all 255 shades.  every 21 shades will be assigned with a letter. For example 0 - 21 is going to display as letter A, 21 - 42 as letter  B and goes on. We are going to use “ “ for lightest shade and “@” for darkest shade. Calculating the index of character for each shade is easy. We just need to divide the shade with 255 and multiple with the character map length - 1. So if we are given 255 (maximum shade), 255 / 255 * ( 12  - 1 )  = 11 meaning we are going to use the character from index 11 from character map. Since the number are between 0 - 255, it will only use range from 0 - 11 if we rounded the index so we don’t need to worry about index out of bound issues.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">let</span> <span class="k">mut</span> <span class="n">art</span> <span class="o">=</span> <span class="nn">String</span><span class="p">::</span><span class="nf">new</span><span class="p">();</span>
+    <span class="k">let</span> <span class="k">mut</span> <span class="n">last_y</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+ 
+    <span class="k">for</span> <span class="n">pixel</span> <span class="n">in</span> <span class="n">gray_image</span><span class="nf">.pixels</span><span class="p">()</span> <span class="p">{</span>
+       <span class="c">// Read the images and write new line if the last read y position is not same as new read y position </span>
+        <span class="k">if</span> <span class="n">last_y</span> <span class="o">!=</span> <span class="n">pixel</span><span class="na">.1</span> <span class="p">{</span>
+            <span class="n">art</span><span class="nf">.push_str</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+            <span class="n">last_y</span> <span class="o">=</span> <span class="n">pixel</span><span class="na">.1</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">let</span> <span class="n">pixel_data</span> <span class="o">=</span> <span class="n">pixel</span><span class="na">.2</span><span class="p">;</span>
+
+	     <span class="c">// We are going to convert RGB to single value shade.  </span>
+        <span class="k">let</span> <span class="n">brightness</span><span class="p">:</span><span class="nb">f64</span> <span class="o">=</span> <span class="p">((</span><span class="n">pixel_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">as</span> <span class="nb">u64</span> <span class="o">+</span> <span class="n">pixel_data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">as</span> <span class="nb">u64</span> <span class="o">+</span> <span class="n">pixel_data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">as</span> <span class="nb">u64</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="k">as</span> <span class="nb">f64</span><span class="p">;</span>
+
+        <span class="c">// Getting character position for shades, since we are using 12 characters, we will have a character for every 21 shades. </span>
+        <span class="k">let</span> <span class="n">character_position</span> <span class="o">=</span> <span class="p">((</span><span class="n">brightness</span><span class="o">/</span><span class="mf">255.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">character_set</span><span class="nf">.len</span><span class="p">()</span>  <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">as</span> <span class="nb">f64</span> <span class="p">)</span><span class="nf">.round</span><span class="p">()</span> <span class="k">as</span> <span class="nb">usize</span><span class="p">;</span>
+         
+         <span class="c">// Write the character to position</span>
+        <span class="n">art</span><span class="nf">.push_str</span><span class="p">(</span><span class="n">character_set</span><span class="p">[</span><span class="n">character_position</span><span class="p">]);</span>
+    <span class="p">}</span>
+    <span class="nn">fs</span><span class="p">::</span><span class="nf">write</span><span class="p">(</span><span class="s">"assk-black.txt"</span><span class="p">,</span> <span class="n">art</span><span class="nf">.as_bytes</span><span class="p">())</span><span class="nf">.unwrap</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>Voila, this is how we get an ANSCII image generator written in Rust. <a href="https://github.com/ye-lin-aung/assk-anscii">Code</a></p>
+
+<p><em>You can play around the character map to get better results. Example some characters are more visible in dark backgrounds than some are in white. Using white spaces for darkest shades are good for dark backgrounds but not god for light backgrounds. The character map can be added new characters to get more detailed images and swap characters to get better image clarity based on your terminal background. You can see I use different character sets for different background images.</em></p>
+
+<h3 id="original">Original</h3>
+<p><img src="https://raw.githubusercontent.com/ye-lin-aung/assk-anscii/master/img/original.jpg" alt="Original" title="Original" /></p>
+
+<h3 id="white-background">White Background</h3>
+<p><img src="https://raw.githubusercontent.com/ye-lin-aung/assk-anscii/master/img/white.jpg" alt="White" title="White" /></p>
+
+<h3 id="black-background">Black Background</h3>
+<p><img src="https://raw.githubusercontent.com/ye-lin-aung/assk-anscii/master/img/black.png" alt="Black" title="Black" /></p>
+
+<p>You will see the current generated image are a bit slender. This is due to font spacing. You can swap better characters to represent better image.</p>
+
+        </div>
+        <p class="mt4">
+  Til next time,<br>
+  Ye Lin Aung
+  <span class="silver">at 21:34</span>
+</p>
+<img src="https://scribble.yelinaung.xyz/images/scribble3.png" alt="scribble" />
+
+      </main>
+      <section class="fixed-l mw7 center w-100 top-50 tc pb4 nt4">
+  
+    <a href="https://scribble.yelinaung.xyz/posts/creating-saml-idp-provider-with-rails" class="no-underline f1 light-blue hover-silver nl5 fl-l ph3">‹</a>
+  
+  
+</section>
+    </div>
+    <footer class="mw7 center tc pt3 pb4 silver">
+      Built with Jekyll using <a href="http://github.com/muan/scribble" class="link silver hover-blue pv1">Scribble</a>.
+      <img src="https://scribble.yelinaung.xyz/images/scribble2.png" alt="scribble" class="mt4 db center" />
+    </footer>
+  </body>
+</html>
