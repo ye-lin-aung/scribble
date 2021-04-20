@@ -28,6 +28,29 @@
 </script>
 {% endif %}
 
+<script src="https://www.gstatic.com/firebasejs/8.4.1/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/8.4.1/firebase-analytics.js"></script>
+
+<script>
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  var firebaseConfig = {
+    apiKey: "AIzaSyCRr1EsVV7LWzth79lUhXHazkOdmFw_3D4",
+    authDomain: "scribble-2713c.firebaseapp.com",
+    projectId: "scribble-2713c",
+    storageBucket: "scribble-2713c.appspot.com",
+    messagingSenderId: "217336471333",
+    appId: "1:217336471333:web:89bcf5e80cb94c911b84cc",
+    measurementId: "G-D1EGSCR8YS"
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  firebase.analytics();
+</script>
+
 {% if site.facebook_appid %}
 <meta content="{{ site.facebook_appid }}" property="fb:app_id" />
 <script>(function(d, s, id) {
